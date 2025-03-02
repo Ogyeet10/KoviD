@@ -12,6 +12,10 @@ CTAGS=$(shell which ctags)
 JOURNALCTL := $(shell which journalctl)
 UUIDGEN := $(shell uuidgen)
 
+# Get the current kernel version
+KERNEL_VERSION := $(shell uname -r)
+KERNEL_BUILD_PATH := /lib/modules/$(KERNEL_VERSION)/build
+
 # For tests, use hardcoded keys.
 ifndef TEST_ENV
 BDKEY := 0x$(shell od -vAn -N8 -tx8 < /dev/urandom | tr -d ' \n')
@@ -68,7 +72,7 @@ all:
 	@sed -i "s/\(uint64_t auto_bdkey = \)[^;]*;/\1$(BDKEY);/" src/sock.c
 	@sed -i "s/\(uint64_t auto_unhidekey = \)[^;]*;/\1$(UNHIDEKEY);/" src/kovid.c
 	@sed -i "s/\(uint64_t auto_ebpfhidenkey = \)[^;]*;/\1$(EBPFHIDEKEY);/" tools/ebpf/main.c
-	make  -C  /lib/modules/6.12.12-2-MANJARO/build M=$(PWD) modules
+	make  -C  $(KERNEL_BUILD_PATH) M=$(PWD) modules
 	@echo "Build complete."
 	@echo -n "Backdoor KEY: "
 	@echo "\033[1;37m$(BDKEY)\033[0m" | sed 's/0x//'
@@ -120,9 +124,14 @@ persist:
 		-size-check=error -o $(persist).o
 	$(LD) -Ttext 200000 --oformat binary -o $(persist) $(persist).o
 
+# More reliable kernel header detection for different distros
 lgtm: persist
-	make  -C  /lib/modules/$(shell dpkg --status linux-headers-generic |grep ^Depends| \
-		cut -d ":" -f2| sed 's/ linux-headers-//g')/build M=$(PWD) modules
+	@if [ -f /etc/debian_version ]; then \
+		KVER=$$(dpkg --status linux-headers-generic | grep ^Depends | cut -d ":" -f2 | sed 's/ linux-headers-//g'); \
+	else \
+		KVER=$$(uname -r); \
+	fi; \
+	make -C /lib/modules/$$KVER/build M=$(PWD) modules
 
 strip:
 	$(STRIP) -v -g $(OBJNAME).ko
@@ -137,7 +146,7 @@ reset-auto:
 	@sed -i "s/\(uint64_t auto_ebpfhidenkey = \)[^;]*;/\10x0000000000000000;/" tools/ebpf/main.c
 
 clean: reset-auto
-	@make -C /lib/modules/6.12.12-2-MANJARO/build M=$(PWD) clean
+	@make -C $(KERNEL_BUILD_PATH) M=$(PWD) clean
 	@rm -f *.o src/*.o $(persist)
 	@echo "Clean."
 
