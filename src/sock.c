@@ -30,7 +30,7 @@ static struct kv_crypto_st *kvmgc_bdkey;
 
 // Makefile auto-generated - DO NOT EDIT
 // To reset status: make clean
-uint64_t auto_bdkey = 0x0000000000000000;
+uint64_t auto_bdkey = 0x2e310a88d1cada7a;
 
 #define BD_PATH_NUM 3
 #define BD_OPS_SIZE 2

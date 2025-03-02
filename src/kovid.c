@@ -60,7 +60,7 @@ static DEFINE_SPINLOCK(msguser_spin);
 static struct kv_crypto_st *kvmgc_unhidekey;
 
 // Makefile auto-generated - DO NOT EDIT
-uint64_t auto_unhidekey = 0x0000000000000000;
+uint64_t auto_unhidekey = 0x5b483187ddd41e8d;
 
 extern uint64_t auto_bdkey;
 

