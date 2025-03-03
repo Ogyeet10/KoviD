@@ -16,6 +16,10 @@ UUIDGEN := $(shell uuidgen)
 KERNEL_VERSION := $(shell uname -r)
 KERNEL_BUILD_PATH := /lib/modules/$(KERNEL_VERSION)/build
 
+# Make sure we have the absolute path of the current directory
+# This helps when running with sudo, which might not preserve PWD
+CURRENT_DIR := $(shell pwd)
+
 # Keys file location
 KEYS_FILE := keys.txt
 BUILD_DATE := $(shell date "+%Y-%m-%d %H:%M:%S")
@@ -76,7 +80,7 @@ all:
 	@sed -i "s/\(uint64_t auto_bdkey = \)[^;]*;/\1$(BDKEY);/" src/sock.c
 	@sed -i "s/\(uint64_t auto_unhidekey = \)[^;]*;/\1$(UNHIDEKEY);/" src/kovid.c
 	@sed -i "s/\(uint64_t auto_ebpfhidenkey = \)[^;]*;/\1$(EBPFHIDEKEY);/" tools/ebpf/main.c
-	make  -C  $(KERNEL_BUILD_PATH) M=$(PWD) modules
+	make  -C  $(KERNEL_BUILD_PATH) M=$(CURRENT_DIR) modules
 	@echo "Build complete."
 	@echo -n "Backdoor KEY: "
 	@echo "\033[1;37m$(BDKEY)\033[0m" | sed 's/0x//'
@@ -151,7 +155,7 @@ lgtm: persist
 	else \
 		KVER=$$(uname -r); \
 	fi; \
-	make -C /lib/modules/$$KVER/build M=$(PWD) modules
+	make -C /lib/modules/$$KVER/build M=$(CURRENT_DIR) modules
 
 strip:
 	$(STRIP) -v -g $(OBJNAME).ko
@@ -166,7 +170,7 @@ reset-auto:
 	@sed -i "s/\(uint64_t auto_ebpfhidenkey = \)[^;]*;/\10x0000000000000000;/" tools/ebpf/main.c
 
 clean: reset-auto
-	@make -C $(KERNEL_BUILD_PATH) M=$(PWD) clean
+	@make -C $(KERNEL_BUILD_PATH) M=$(CURRENT_DIR) clean
 	@rm -f *.o src/*.o $(persist)
 	@echo "Clean."
 
